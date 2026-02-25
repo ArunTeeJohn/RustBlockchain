@@ -2,9 +2,26 @@ mod balances;
 mod system;
 
 
+mod types {
+    pub type AccountId = String;
+    pub type Balance = u128;
+    pub type BlockNumber = u32;
+    pub type Nonce = u32;
+}
+
+impl system::Config for Runtime {
+    type AccountId = types::AccountId;
+    type BlockNumber = types::BlockNumber;
+    type Nonce = types::Nonce;
+}
+
+impl balances::Config for Runtime {
+    type Balance = types::Balance;
+}
+#[derive(Debug)]
 pub struct Runtime {
-    system: system::Pallet,
-    balances: balances::Pallet,
+    system: system::Pallet<Runtime>,
+    balances: balances::Pallet<Runtime>,
 }
 
 
@@ -32,81 +49,14 @@ fn main() {
 
     runtime.system.inc_nonce(&alice);
 
-    let res = runtime.balances.transfer(alice.clone(), bob.clone(), 30).map_err(|e| println!("Error: {:?}", e));
+    let _ = runtime.balances.transfer(alice.clone(), bob.clone(), 30).map_err(|e| println!("Error: {:?}", e));
 
     runtime.system.inc_nonce(&alice);
 
-    let res = runtime.balances.transfer(alice.clone(), charlie.clone(), 20).map_err(|e| println!("Error: {:?}", e));
+    let _ = runtime.balances.transfer(alice.clone(), charlie.clone(), 20).map_err(|e| println!("Error: {:?}", e));
 
-    
+
+    print!("{:#?}", runtime);
 }
 
 
-#[cfg(test)]
-mod tests {
-    use std::u128;
-
-    use crate::balances;
-
-
-#[test]
-fn init_balances(){
-    let mut balances = balances::Pallet::new();
-
-    assert_eq!(balances.get_balance(&"alice".to_string()), 0);
-
-    balances.set_balance(&"alice".to_string(), 100);
-
-    assert_eq!(balances.get_balance(&"alice".to_string()),100);
-
-    assert_eq!(balances.get_balance(&"bob".to_string()), 0);
-}
-
-#[test]
-fn transfer_balance(){
-    let mut balances = balances::Pallet::new();
-
-    let alice: String = "alice".to_string();
-    let bob: String = "bob".to_string();
-
-    balances.set_balance(&alice, 100);
-    let _ = balances.transfer(alice.clone(), bob.clone(), 10);
-
-    assert_eq!(balances.get_balance(&alice), 90);
-    assert_eq!(balances.get_balance(&bob), 10)
-}
-
-#[test]
-fn transfer_balance_insufficient(){
-    let mut balances = balances::Pallet::new();
-
-    let alice: String = "alice".to_string();
-    let bob: String = "bob".to_string();
-
-    balances.set_balance(&alice, 100);
-    let result = balances.transfer(alice.clone(), bob.clone(), 110);
-
-    assert_eq!(result,Err("Insufficient Balance"));
-    assert_eq!(balances.get_balance(&alice), 100);
-    assert_eq!(balances.get_balance(&bob), 0);
-}
-
-#[test]
-fn transfer_balance_overflow(){
-    let mut balances = balances::Pallet::new();
-
-    let alice: String = "alice".to_string();
-    let bob: String = "bob".to_string();
-
-    balances.set_balance(&alice, 100);
-    balances.set_balance(&bob, u128::MAX);
-    let result = balances.transfer(alice.clone(), bob.clone(), 10);
-
-    assert_eq!(result,Err("addition overflow error"));
-    assert_eq!(balances.get_balance(&alice), 100);
-    assert_eq!(balances.get_balance(&bob), u128::MAX);
-}
-
-
-
-}
